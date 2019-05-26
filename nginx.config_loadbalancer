@@ -1,0 +1,50 @@
+## This config will perform loadbalancing of incomig traffic between the mentioned servers. In addition this config is enabled with https.
+
+user  nginx;
+worker_processes  1;
+
+error_log  /var/log/nginx/error.log warn;
+pid        /var/run/nginx.pid;
+
+
+events {
+    worker_connections  1024;
+}
+
+
+http {
+    include       /etc/nginx/mime.types;
+    default_type  application/octet-stream;
+
+    upstream backend {
+        server 172.31.17.64; # private ip address of application servers
+        server 172.31.2.152; # private ip address of application servers
+   }
+
+    log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                      '$status $body_bytes_sent "$http_referer" '
+                      '"$http_user_agent" "$http_x_forwarded_for"';
+
+    access_log  /var/log/nginx/access.log  main;
+
+    sendfile        on;
+    #tcp_nopush     on;
+
+    keepalive_timeout  65;
+
+    #gzip  on;
+
+    #include /etc/nginx/conf.d/*.conf;
+    server {
+        #listen 80; ##for http connection
+
+        listen 0.0.0.0:443 ssl;
+        server_name  ec2-13-233-5-122.ap-south-1.compute.amazonaws.com;
+        ssl_certificate /etc/nginx/jenkins.crt;
+        ssl_certificate_key /etc/nginx/jenkins.key;
+
+        location / {
+            proxy_pass http://backend;
+        }
+    }
+}
